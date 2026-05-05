@@ -52,17 +52,17 @@ try {
             $stats['tong_san_pham'] = (int)$rs1->fetch_assoc()['total'];
         }
 
-        $rs2 = $conn->query("SELECT COALESCE(SUM(so_luong_ton), 0) AS total FROM san_pham WHERE trang_thai = 1");
+        $rs2 = $conn->query("SELECT COALESCE(SUM(ton_kho), 0) AS total FROM san_pham WHERE trang_thai = 1");
         if ($rs2) {
             $stats['tong_ton_kho'] = (int)$rs2->fetch_assoc()['total'];
         }
 
-        $rs3 = $conn->query("SELECT COUNT(*) AS total FROM san_pham WHERE trang_thai = 1 AND so_luong_ton > 0 AND so_luong_ton <= 5");
+        $rs3 = $conn->query("SELECT COUNT(*) AS total FROM san_pham WHERE trang_thai = 1 AND ton_kho > 0 AND ton_kho <= 5");
         if ($rs3) {
             $stats['sap_het'] = (int)$rs3->fetch_assoc()['total'];
         }
 
-        $rs4 = $conn->query("SELECT COUNT(*) AS total FROM san_pham WHERE trang_thai = 1 AND so_luong_ton <= 0");
+        $rs4 = $conn->query("SELECT COUNT(*) AS total FROM san_pham WHERE trang_thai = 1 AND ton_kho <= 0");
         if ($rs4) {
             $stats['het_hang'] = (int)$rs4->fetch_assoc()['total'];
         }
@@ -76,16 +76,16 @@ try {
 
         $sql = "
             SELECT 
-                id,
-                ma_sku,
-                ten_san_pham,
-                gia_ban,
-                hinh_anh,
-                so_luong_ton,
-                trang_thai,
-                ngay_tao
-            FROM san_pham
-            WHERE 1=1
+    id,
+    ma_sku,
+    ten_san_pham,
+    gia_ban,
+    hinh_anh,
+    ton_kho,
+    trang_thai,
+    ngay_tao
+FROM san_pham
+WHERE 1=1
         ";
 
         $params = [];
@@ -100,14 +100,14 @@ try {
         }
 
         if ($filter === 'sap_het') {
-            $sql .= " AND so_luong_ton > 0 AND so_luong_ton <= 5";
-        } elseif ($filter === 'het_hang') {
-            $sql .= " AND so_luong_ton <= 0";
-        } elseif ($filter === 'con_hang') {
-            $sql .= " AND so_luong_ton > 5";
-        }
+    $sql .= " AND ton_kho > 0 AND ton_kho <= 5";
+} elseif ($filter === 'het_hang') {
+    $sql .= " AND ton_kho <= 0";
+} elseif ($filter === 'con_hang') {
+    $sql .= " AND ton_kho > 5";
+}
 
-        $sql .= " ORDER BY so_luong_ton ASC, id DESC";
+$sql .= " ORDER BY ton_kho ASC, id DESC";
 
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
@@ -129,7 +129,7 @@ try {
                 'ten_san_pham' => $row['ten_san_pham'],
                 'gia_ban' => (int)$row['gia_ban'],
                 'hinh_anh' => $row['hinh_anh'],
-                'so_luong_ton' => (int)$row['so_luong_ton'],
+                'so_luong_ton' => (int)$row['ton_kho'],
                 'trang_thai' => (int)$row['trang_thai'],
                 'ngay_tao' => $row['ngay_tao']
             ];

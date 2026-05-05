@@ -2,8 +2,9 @@
 include dirname(__DIR__) . "/header.php";
 include dirname(dirname(__DIR__)) . "/config/ket_noi_csdl.php";
 
-$sql_spa = "SELECT * FROM dich_vu_hoboi_sanchoi ORDER BY id ASC";
-$result_spa = $conn->query($sql_spa);
+/* LẤY BẢNG GIÁ */
+$sql = "SELECT * FROM dich_vu_ho_boi ORDER BY id ASC";
+$result = $conn->query($sql);
 ?>
 <section class="vpPageWrap">
   <div class="vpIntroHead">

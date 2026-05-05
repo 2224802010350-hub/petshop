@@ -395,9 +395,11 @@ if (
     }
 
     function imagePath(path) {
-        if (!path) return noImage;
-        return '../' + path;
-    }
+    if (!path) return noImage;
+    if (path.startsWith('http')) return path;
+    if (path.startsWith('/')) return path;
+    return '/petshop/petshop/assets/uploads/products/' + path;
+}
 
     function resetFilter() {
         document.getElementById('searchKeyword').value = '';

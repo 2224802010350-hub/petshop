@@ -491,7 +491,9 @@ if (
 
     function imagePath(path) {
     if (!path) return '/petshop/petshop/assets/img/no-image.jpg';
-    return '/petshop/petshop/uploads/products/' + path;
+    if (path.startsWith('http')) return path;
+    if (path.startsWith('/')) return path;
+    return '/petshop/petshop/assets/uploads/products/' + path;
 }
 
     async function loadSuppliers() {
@@ -710,58 +712,86 @@ if (
         }
     }
 
-    async function loadDanhSachPhieuNhap() {
-        const res = await fetch(apiUrl + '?action=list');
-        const data = await res.json();
+   async function loadDanhSachPhieuNhap() {
+    const tbody = document.getElementById("phieuNhapTableBody");
 
-        const tbody = document.getElementById('phieuNhapTableBody');
-        tbody.innerHTML = '';
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="7" class="empty-text">Đang tải dữ liệu...</td>
+        </tr>
+    `;
+
+    try {
+        const res = await fetch(apiUrl + "?action=list&t=" + Date.now(), {
+            credentials: "same-origin",
+            cache: "no-store"
+        });
+
+        const data = await res.json();
+        console.log("DANH SÁCH PHIẾU NHẬP:", data);
 
         if (!data.success) {
-            tbody.innerHTML = `<tr><td colspan="7" class="empty-text">${escapeHtml(data.message || 'Không tải được dữ liệu.')}</td></tr>`;
-            return;
-        }
-
-        if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="empty-text">Chưa có phiếu nhập nào.</td></tr>`;
-            return;
-        }
-
-        data.data.forEach(item => {
-            let statusClass = 'draft';
-            let statusText = 'Nháp';
-
-            if (item.trang_thai === 'confirmed') {
-                statusClass = 'confirmed';
-                statusText = 'Đã xác nhận';
-            } else if (item.trang_thai === 'cancelled') {
-                statusClass = 'cancelled';
-                statusText = 'Đã hủy';
-            }
-
-            let actionButtons = '—';
-            if (item.trang_thai === 'draft') {
-                actionButtons = `
-                    <div class="action-row">
-                        <button type="button" class="btn btn-success" onclick="confirmPhieuNhap(${item.id})">Xác nhận</button>
-                        <button type="button" class="btn btn-danger" onclick="cancelPhieuNhap(${item.id})">Hủy</button>
-                    </div>
-                `;
-            }
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${escapeHtml(item.ma_phieu)}</td>
-                <td>${escapeHtml(item.ten_nha_cung_cap)}</td>
-                <td>${escapeHtml(item.ngay_nhap)}</td>
-                <td>${formatMoney(item.tong_tien)} đ</td>
-                <td><span class="status ${statusClass}">${statusText}</span></td>
-                <td>${escapeHtml(item.ghi_chu || '—')}</td>
-                <td>${actionButtons}</td>
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="empty-text">${escapeHtml(data.message || "Không tải được danh sách phiếu nhập")}</td>
+                </tr>
             `;
-            tbody.appendChild(tr);
-        });
+            return;
+        }
+
+        const items = data.data || [];
+
+        if (items.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="empty-text">Chưa có phiếu nhập.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = items.map(p => {
+            const trangThai = p.trang_thai || "draft";
+
+            return `
+                <tr>
+                    <td><b>${escapeHtml(p.ma_phieu || ("PN#" + p.id))}</b></td>
+                    <td>${escapeHtml(p.ten_nha_cung_cap || "-")}</td>
+                    <td>${escapeHtml(p.ngay_nhap || "-")}</td>
+                    <td><b>${formatMoney(p.tong_tien || 0)} đ</b></td>
+                    <td>${hienTrangThaiPhieu(trangThai)}</td>
+                    <td>${escapeHtml(p.ghi_chu || "—")}</td>
+                    <td>
+                        ${trangThai === "draft" ? `
+                            <button class="btn btn-primary" onclick="confirmPhieuNhap(${p.id})">Xác nhận nhập</button>
+                            <button class="btn btn-danger" onclick="cancelPhieuNhap(${p.id})">Hủy</button>
+                        ` : "—"}
+                    </td>
+                </tr>
+            `;
+        }).join("");
+
+    } catch (error) {
+        console.error(error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-text">Lỗi tải dữ liệu. Kiểm tra API.</td>
+            </tr>
+        `;
     }
+}
+
+function hienTrangThaiPhieu(trangThai) {
+    if (trangThai === "confirmed") {
+        return `<span class="badge badge-ok">Đã nhập kho</span>`;
+    }
+
+    if (trangThai === "cancelled") {
+        return `<span class="badge badge-out">Đã hủy</span>`;
+    }
+
+    return `<span class="badge badge-low">Nháp</span>`;
+}
 
     async function confirmPhieuNhap(id) {
         if (!confirm('Xác nhận phiếu nhập này? Khi xác nhận sẽ cộng số lượng vào tồn kho.')) return;
@@ -813,10 +843,11 @@ if (
             loadProducts();
         }
     });
-
+document.addEventListener("DOMContentLoaded", function () {
     loadSuppliers();
     renderSelectedItems();
     loadDanhSachPhieuNhap();
+});
 </script>
 
 </body> 
