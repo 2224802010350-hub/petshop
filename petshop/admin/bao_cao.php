@@ -1,0 +1,351 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) session_start();
+if (empty($_SESSION['user'])) { header("Location: dang_nhap.php"); exit; }
+include __DIR__ . "/_header.php";
+?>
+
+<div class="card" style="width:100%;max-width:none;margin:0">
+  <div class="card__head">
+    <h2>📈 Báo cáo thống kê</h2>
+    <div class="row" style="flex:1;justify-content:flex-end">
+      <button class="btn" onclick="loadReport()">Làm mới</button>
+    </div>
+  </div>
+
+  <div class="card__body">
+    <div class="report-hero">
+  <div>
+    <div class="hero-badge">PETSHOP REPORT</div>
+    <h1>Tổng quan kinh doanh hôm nay</h1>
+    <p>Theo dõi doanh thu, đơn hàng, khách hàng và sản phẩm bán chạy trong hệ thống.</p>
+  </div>
+  <div class="hero-money" id="heroDoanhThu">0 ₫</div>
+</div>
+    <div class="toast" id="toast"></div>
+
+    <div class="grid2" style="grid-template-columns: repeat(4, 1fr); gap:14px">
+      <div class="card stat-card">
+        <div class="muted">Doanh thu</div>
+        <h2 id="doanhThu">0 ₫</h2>
+      </div>
+
+      <div class="card stat-card">
+        <div class="muted">Tổng đơn hàng</div>
+        <h2 id="tongDon">0</h2>
+      </div>
+
+      <div class="card stat-card">
+        <div class="muted">Đã thanh toán</div>
+        <h2 id="donDaThanhToan">0</h2>
+      </div>
+
+      <div class="card stat-card">
+        <div class="muted">Chưa thanh toán</div>
+        <h2 id="donChuaThanhToan">0</h2>
+      </div>
+
+      <div class="card stat-card">
+        <div class="muted">Tổng khách hàng</div>
+        <h2 id="tongKhach">0</h2>
+      </div>
+
+      <div class="card stat-card">
+        <div class="muted">Tổng sản phẩm</div>
+        <h2 id="tongSanPham">0</h2>
+      </div>
+
+      <div class="card stat-card">
+        <div class="muted">Sắp hết hàng</div>
+        <h2 id="sapHetHang">0</h2>
+      </div>
+
+      <div class="card stat-card">
+  <div class="muted">Gợi ý hôm nay</div>
+  <h2 id="goiYHomNay">Theo dõi tồn kho</h2>
+</div>
+    </div>
+
+    <div style="height:18px"></div>
+
+    <div class="grid2" style="grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card" style="box-shadow:none;border:1px solid #e5e7eb">
+        <div class="card__head">
+          <h3>Doanh thu 7 ngày gần nhất</h3>
+        </div>
+        <div class="card__body">
+          <div id="chartRevenue"></div>
+        </div>
+      </div>
+
+      <div class="card" style="box-shadow:none;border:1px solid #e5e7eb">
+        <div class="card__head">
+          <h3>Top sản phẩm bán chạy</h3>
+        </div>
+        <div class="card__body">
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Sản phẩm</th>
+                  <th>SKU</th>
+                  <th>SL bán</th>
+                  <th>Doanh thu</th>
+                </tr>
+              </thead>
+              <tbody id="topProducts"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:18px"></div>
+
+    <div class="card" style="box-shadow:none;border:1px solid #e5e7eb">
+      <div class="card__head">
+        <h3>Top khách hàng mua nhiều</h3>
+      </div>
+
+      <div class="card__body">
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Khách hàng</th>
+                <th>Số điện thoại</th>
+                <th>Số đơn</th>
+                <th>Tổng mua</th>
+              </tr>
+            </thead>
+            <tbody id="topCustomers"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+    .report-hero{
+  margin-bottom:18px;
+  padding:26px;
+  border-radius:24px;
+  background:linear-gradient(135deg,#0f172a,#2563eb);
+  color:white;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-shadow:0 18px 45px rgba(37,99,235,.25);
+}
+
+.report-hero h1{
+  margin:8px 0;
+  font-size:34px;
+}
+
+.report-hero p{
+  margin:0;
+  color:#dbeafe;
+}
+
+.hero-badge{
+  display:inline-block;
+  padding:7px 12px;
+  border-radius:999px;
+  background:rgba(255,255,255,.15);
+  font-weight:900;
+  font-size:12px;
+}
+
+.hero-money{
+  font-size:36px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+.stat-card{
+  transition:.2s;
+}
+
+.stat-card:hover{
+  transform:translateY(-5px);
+  box-shadow:0 14px 35px rgba(15,23,42,.12) !important;
+}
+.stat-card {
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  box-shadow: none !important;
+}
+
+.stat-card h2 {
+  margin: 8px 0 0;
+  font-size: 26px;
+  color: #0f172a;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 130px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.bar-bg {
+  height: 18px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 999px;
+}
+
+@media(max-width: 1100px){
+  .grid2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+
+<script>
+const API_REPORT = "api/api_bao_cao.php";
+
+const toast = document.getElementById("toast");
+
+function showToast(text, ok=true){
+  toast.className = "toast " + (ok ? "ok" : "err");
+  toast.style.display = "block";
+  toast.innerText = text;
+  setTimeout(() => toast.style.display = "none", 2400);
+}
+
+function money(n){
+  return new Intl.NumberFormat("vi-VN").format(Number(n || 0)) + " ₫";
+}
+
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#039;"
+  })[m]);
+}
+
+async function loadReport(){
+  try {
+    const r = await fetch(API_REPORT + "?t=" + Date.now(), {
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+
+    const d = await r.json();
+
+    if (!d.ok) {
+      showToast(d.msg || "Không tải được báo cáo", false);
+      return;
+    }
+
+    const s = d.stats || {};
+    let goiY = "Hệ thống đang ổn định";
+
+if ((s.sap_het_hang || 0) > 0) {
+  goiY = "⚠️ Có sản phẩm sắp hết hàng";
+}
+
+if ((s.don_chua_thanh_toan || 0) > 0) {
+  goiY = "💰 Có đơn chưa thanh toán";
+}
+
+document.getElementById("goiYHomNay").innerText = goiY;
+
+    document.getElementById("doanhThu").innerText = money(s.doanh_thu);
+    document.getElementById("heroDoanhThu").innerText = money(s.doanh_thu);
+    document.getElementById("tongDon").innerText = s.tong_don || 0;
+    document.getElementById("donDaThanhToan").innerText = s.don_da_thanh_toan || 0;
+    document.getElementById("donChuaThanhToan").innerText = s.don_chua_thanh_toan || 0;
+    document.getElementById("tongKhach").innerText = s.tong_khach || 0;
+    document.getElementById("tongSanPham").innerText = s.tong_san_pham || 0;
+    document.getElementById("sapHetHang").innerText = s.sap_het_hang || 0;
+
+    renderRevenueChart(d.doanh_thu_ngay || []);
+    renderTopProducts(d.top_san_pham || []);
+    renderTopCustomers(d.top_khach_hang || []);
+
+  } catch (e) {
+    showToast("Lỗi tải báo cáo", false);
+  }
+}
+
+function renderRevenueChart(items){
+  const box = document.getElementById("chartRevenue");
+
+  if (!items.length) {
+    box.innerHTML = `<div class="muted">Chưa có doanh thu.</div>`;
+    return;
+  }
+
+  const max = Math.max(...items.map(x => Number(x.doanh_thu || 0)), 1);
+
+  box.innerHTML = items.map(x => {
+    const value = Number(x.doanh_thu || 0);
+    const percent = Math.max(4, Math.round(value / max * 100));
+
+    return `
+      <div class="bar-row">
+        <div><b>${esc(x.ngay)}</b></div>
+        <div class="bar-bg">
+          <div class="bar-fill" style="width:${percent}%"></div>
+        </div>
+        <div style="text-align:right"><b>${money(value)}</b></div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderTopProducts(items){
+  const tbody = document.getElementById("topProducts");
+
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="4">Chưa có dữ liệu</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = items.map(x => `
+    <tr>
+      <td><b>${esc(x.ten_san_pham)}</b></td>
+      <td class="muted">${esc(x.ma_sku || "")}</td>
+      <td><b>${x.so_luong_ban || 0}</b></td>
+      <td><b>${money(x.doanh_thu)}</b></td>
+    </tr>
+  `).join("");
+}
+
+function renderTopCustomers(items){
+  const tbody = document.getElementById("topCustomers");
+
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="4">Chưa có dữ liệu</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = items.map(x => `
+    <tr>
+      <td><b>${esc(x.ho_ten)}</b></td>
+      <td>${esc(x.so_dien_thoai || "")}</td>
+      <td><b>${x.so_don || 0}</b></td>
+      <td><b>${money(x.tong_mua)}</b></td>
+    </tr>
+  `).join("");
+}
+
+document.addEventListener("DOMContentLoaded", loadReport);
+</script>
+
+<?php include __DIR__ . "/_footer.php"; ?>
