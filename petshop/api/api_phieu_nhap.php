@@ -103,7 +103,7 @@ try {
                 'ma_sku' => $row['ma_sku'],
                 'ten_san_pham' => $row['ten_san_pham'],
                 'gia_ban' => (int)$row['gia_ban'],
-                'ton_hien_tai' => (int)$row['ton_kho'],
+                'ton_hien_tai' => (int)$row['so_luong_ton'],
                 'hinh_anh' => $row['hinh_anh']
             ];
         }
