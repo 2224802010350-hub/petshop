@@ -792,11 +792,31 @@ async function loadDanhSachPhieuNhap() {
                     <td>${hienTrangThaiPhieu(trangThai)}</td>
                     <td>${escapeHtml(p.ghi_chu || "—")}</td>
                     <td>
-                        ${trangThai === "draft" ? `
-                            <button class="btn btn-primary" onclick="confirmPhieuNhap(${p.id})">Xác nhận nhập</button>
-                            <button class="btn btn-danger" onclick="cancelPhieuNhap(${p.id})">Hủy</button>
-                        ` : "—"}
-                    </td>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+
+        <button class="btn btn-secondary"
+            onclick="viewPhieuNhap(${p.id})">
+            Chi tiết
+        </button>
+
+        <button class="btn btn-success"
+            onclick="printPhieuNhap(${p.id})">
+            In
+        </button>
+
+        ${trangThai === "draft" ? `
+            <button class="btn btn-primary"
+                onclick="confirmPhieuNhap(${p.id})">
+                Xác nhận
+            </button>
+
+            <button class="btn btn-danger"
+                onclick="cancelPhieuNhap(${p.id})">
+                Hủy
+            </button>
+        ` : ""}
+    </div>
+</td>
                 </tr>
             `;
         }).join("");
@@ -879,6 +899,17 @@ document.addEventListener("DOMContentLoaded", function () {
     renderSelectedItems();
     loadDanhSachPhieuNhap();
 });
+function viewPhieuNhap(id){
+    window.location.href =
+    "chi_tiet_phieu_nhap.php?id=" + id;
+}
+
+function printPhieuNhap(id){
+    window.open(
+        "in_phieu_nhap.php?id=" + id,
+        "_blank"
+    );
+}
 </script>
 
 <?php include __DIR__ . "/_footer.php"; ?>

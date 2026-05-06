@@ -1,222 +1,465 @@
 <?php
-include("../config/ket_noi_csdl.php");
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+if (
+    !isset($_SESSION['user']) ||
+    !is_array($_SESSION['user']) ||
+    ($_SESSION['user']['vai_tro'] ?? '') !== 'admin'
+) {
+    header('Location: /petshop/petshop/admin/dang_nhap.php');
+    exit;
+}
+
+include __DIR__ . "/_header.php";
+require_once("../config/ket_noi_csdl.php");
 
 $sql = "SELECT * FROM dat_dich_vu_spa ORDER BY ngay_tao DESC";
 $result = $conn->query($sql);
 ?>
 
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Quản lý lịch hẹn Spa</title>
+<style>
+:root{
+    --bg:#f3f6fb;
+    --card:#fff;
+    --text:#0f172a;
+    --muted:#64748b;
+    --line:#e2e8f0;
+    --primary:#2563eb;
+    --shadow:0 10px 30px rgba(15,23,42,.08);
+    --radius:18px;
+}
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+.lichSpaPage *{
+    box-sizing:border-box;
+}
 
-    <style>
-        body {
-            background: #fff8e8;
-            font-family: Arial, sans-serif;
-        }
+.lichSpaPage{
+    width:100%;
+}
 
-        .box {
-            background: white;
-            padding: 25px;
-            border-radius: 16px;
-            margin-top: 30px;
-            box-shadow: 0 5px 18px rgba(0,0,0,0.12);
-        }
+.lichSpaPage .wrap{
+    width:100%;
+    padding:0;
+}
 
-        h3 {
-            color: #f58220;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 25px;
-        }
+.lichSpaPage .hero{
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    border-radius:28px;
+    padding:28px;
+    color:white;
+    margin-bottom:22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:18px;
+    box-shadow:0 18px 45px rgba(15,23,42,.18);
+}
 
-        th {
-            background: #00a6a6;
-            color: white;
-            text-align: center;
-            white-space: nowrap;
-        }
+.lichSpaPage .hero h1{
+    margin:0;
+    font-size:34px;
+    font-weight:900;
+}
 
-        td {
-            text-align: center;
-            vertical-align: middle;
-            font-size: 14px;
-        }
+.lichSpaPage .hero p{
+    margin:10px 0 0;
+    color:#cbd5e1;
+}
 
-        .table-wrap {
-            overflow-x: auto;
-        }
+.lichSpaPage .heroBtn{
+    background:#f97316;
+    color:white;
+    border:0;
+    border-radius:999px;
+    padding:13px 22px;
+    font-weight:900;
+    text-decoration:none;
+    white-space:nowrap;
+}
 
-        .status {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-            display: inline-block;
-            white-space: nowrap;
-        }
+.lichSpaPage .stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+    margin-bottom:20px;
+}
 
-        .cho {
-            background: #fff3cd;
-            color: #856404;
-        }
+.lichSpaPage .statCard{
+    background:white;
+    border-radius:22px;
+    padding:20px;
+    box-shadow:var(--shadow);
+    border:1px solid #eef2f7;
+}
 
-        .xacnhan {
-            background: #d4edda;
-            color: #155724;
-        }
+.lichSpaPage .statLabel{
+    color:#64748b;
+    font-size:14px;
+    font-weight:700;
+}
 
-        .hoanthanh {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
+.lichSpaPage .statValue{
+    font-size:30px;
+    font-weight:900;
+    margin-top:8px;
+}
 
-        .huy {
-            background: #f8d7da;
-            color: #721c24;
-        }
+.lichSpaPage .card{
+    background:white;
+    border-radius:26px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    border:1px solid #eef2f7;
+}
 
-        .btn-action {
-            margin: 2px;
-            font-size: 12px;
-            border-radius: 15px;
-            padding: 5px 10px;
-        }
-    </style>
-</head>
+.lichSpaPage .cardHead{
+    padding:20px 24px;
+    border-bottom:1px solid #eef2f7;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
 
-<body>
+.lichSpaPage .cardHead h2{
+    margin:0;
+    font-size:24px;
+    font-weight:900;
+}
 
-<div class="container-fluid">
-    <div class="box">
+.lichSpaPage .tableWrap{
+    overflow:auto;
+}
 
-        <h3>📅 QUẢN LÝ LỊCH HẸN DỊCH VỤ SPA</h3>
+.lichSpaPage table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:1500px;
+}
 
-        <div class="mb-3">
-            <a href="dashboard.php" class="btn btn-secondary">
-                Quay lại dashboard
-            </a>
-        </div>
+.lichSpaPage th{
+    background:#f8fafc;
+    color:#475569;
+    font-size:14px;
+    font-weight:900;
+    padding:16px;
+    border-bottom:1px solid #e5e7eb;
+    text-align:center;
+}
 
-        <div class="table-wrap">
-            <table class="table table-bordered table-hover">
-                <thead>
-                    <tr>
-                        <th>STT</th>
-                        <th>Họ tên</th>
-                        <th>SĐT</th>
-                        <th>Tên thú cưng</th>
-                        <th>Cân nặng</th>
-                        <th>Dịch vụ chính</th>
-                        <th>Dịch vụ thêm</th>
-                        <th>Ngày đặt</th>
-                        <th>Giờ đặt</th>
-                        <th>Ghi chú</th>
-                        <th>Trạng thái</th>
-                        <th>Ngày tạo</th>
-                        <th>Xử lý</th>
-                    </tr>
-                </thead>
+.lichSpaPage td{
+    padding:16px;
+    border-bottom:1px solid #eef2f7;
+    text-align:center;
+    vertical-align:middle;
+}
 
-                <tbody>
-                    <?php if ($result && $result->num_rows > 0) { ?>
-                        <?php $stt = 1; ?>
-                        <?php while ($row = $result->fetch_assoc()) { ?>
+.lichSpaPage tr:hover{
+    background:#f8fbff;
+}
 
-                            <?php
-                            $status_class = "cho";
+.lichSpaPage .customer{
+    font-weight:900;
+    color:#0f172a;
+}
 
-                            if ($row['trang_thai'] == "Đã xác nhận") {
-                                $status_class = "xacnhan";
-                            } elseif ($row['trang_thai'] == "Đã hoàn thành") {
-                                $status_class = "hoanthanh";
-                            } elseif ($row['trang_thai'] == "Đã hủy") {
-                                $status_class = "huy";
-                            }
-                            ?>
+.lichSpaPage .pet{
+    color:#64748b;
+    font-size:13px;
+    margin-top:4px;
+}
 
-                            <tr>
-                                <td><?php echo $stt++; ?></td>
+.lichSpaPage .status{
+    display:inline-block;
+    padding:8px 14px;
+    border-radius:999px;
+    font-weight:900;
+    font-size:13px;
+    white-space:nowrap;
+}
 
-                                <td><?php echo htmlspecialchars($row['ho_ten']); ?></td>
+.lichSpaPage .cho{
+    background:#fff3cd;
+    color:#856404;
+}
 
-                                <td><?php echo htmlspecialchars($row['so_dien_thoai']); ?></td>
+.lichSpaPage .xacnhan{
+    background:#dcfce7;
+    color:#166534;
+}
 
-                                <td><?php echo htmlspecialchars($row['ten_thu_cung']); ?></td>
+.lichSpaPage .hoanthanh{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
 
-                                <td><?php echo htmlspecialchars($row['can_nang']); ?></td>
+.lichSpaPage .huy{
+    background:#fee2e2;
+    color:#991b1b;
+}
 
-                                <td><?php echo htmlspecialchars($row['dich_vu_chinh']); ?></td>
+.lichSpaPage .actionWrap{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    justify-content:center;
+}
 
-                                <td>
-                                    <?php
-                                    echo !empty($row['dich_vu_them'])
-                                        ? htmlspecialchars($row['dich_vu_them'])
-                                        : "Không có";
-                                    ?>
-                                </td>
+.lichSpaPage .btn{
+    border:0;
+    border-radius:999px;
+    padding:8px 14px;
+    font-size:13px;
+    font-weight:900;
+    text-decoration:none;
+    display:inline-block;
+}
 
-                                <td><?php echo date("d/m/Y", strtotime($row['ngay_dat'])); ?></td>
+.lichSpaPage .btn-success{
+    background:#16a34a;
+    color:white;
+}
 
-                                <td><?php echo date("H:i", strtotime($row['gio_dat'])); ?></td>
+.lichSpaPage .btn-primary{
+    background:#2563eb;
+    color:white;
+}
 
-                                <td>
-                                    <?php
-                                    echo !empty($row['ghi_chu'])
-                                        ? htmlspecialchars($row['ghi_chu'])
-                                        : "Không có";
-                                    ?>
-                                </td>
+.lichSpaPage .btn-warning{
+    background:#f59e0b;
+    color:white;
+}
 
-                                <td>
-                                    <span class="status <?php echo $status_class; ?>">
-                                        <?php echo htmlspecialchars($row['trang_thai']); ?>
-                                    </span>
-                                </td>
+.lichSpaPage .btn-danger{
+    background:#ef4444;
+    color:white;
+}
 
-                                <td><?php echo date("d/m/Y H:i", strtotime($row['ngay_tao'])); ?></td>
+.lichSpaPage .empty{
+    padding:30px;
+    color:#64748b;
+    font-weight:700;
+}
 
-                                <td style="min-width: 220px;">
-                                    <a href="xu_ly_lich_hen.php?action=xac_nhan&id=<?php echo $row['id']; ?>"
-                                       class="btn btn-success btn-sm btn-action">
-                                        Xác nhận
-                                    </a>
+@media(max-width:1100px){
+    .lichSpaPage .stats{
+        grid-template-columns:repeat(2,1fr);
+    }
+}
 
-                                    <a href="xu_ly_lich_hen.php?action=hoan_thanh&id=<?php echo $row['id']; ?>"
-                                       class="btn btn-primary btn-sm btn-action">
-                                        Hoàn thành
-                                    </a>
+@media(max-width:700px){
+    .lichSpaPage .hero{
+        flex-direction:column;
+        align-items:flex-start;
+    }
 
-                                    <a href="xu_ly_lich_hen.php?action=huy&id=<?php echo $row['id']; ?>"
-                                       class="btn btn-warning btn-sm btn-action">
-                                        Hủy
-                                    </a>
+    .lichSpaPage .stats{
+        grid-template-columns:1fr;
+    }
+}
+</style>
 
-                                    <a href="xu_ly_lich_hen.php?action=xoa&id=<?php echo $row['id']; ?>"
-                                       class="btn btn-danger btn-sm btn-action"
-                                       onclick="return confirm('Bạn có chắc muốn xóa lịch hẹn này không?')">
-                                        Xóa
-                                    </a>
-                                </td>
-                            </tr>
+<div class="lichSpaPage">
+<div class="wrap">
 
-                        <?php } ?>
-                    <?php } else { ?>
-                        <tr>
-                            <td colspan="13" class="text-danger">
-                                Chưa có lịch hẹn nào.
-                            </td>
-                        </tr>
-                    <?php } ?>
-                </tbody>
-            </table>
-        </div>
+<div class="hero">
+    <div>
+        <h1>📅 Quản lý lịch hẹn Spa</h1>
+        <p>Theo dõi lịch đặt dịch vụ spa, grooming và chăm sóc thú cưng.</p>
+    </div>
 
+    <a href="dashboard.php" class="heroBtn">
+        ← Dashboard
+    </a>
+</div>
+
+<?php
+$total = 0;
+$cho = 0;
+$xacnhan = 0;
+$hoanthanh = 0;
+
+if ($result && $result->num_rows > 0) {
+    $total = $result->num_rows;
+
+    $result->data_seek(0);
+
+    while($r = $result->fetch_assoc()){
+        if($r['trang_thai'] == 'Chờ xác nhận') $cho++;
+        if($r['trang_thai'] == 'Đã xác nhận') $xacnhan++;
+        if($r['trang_thai'] == 'Đã hoàn thành') $hoanthanh++;
+    }
+
+    $result->data_seek(0);
+}
+?>
+
+<div class="stats">
+    <div class="statCard">
+        <div class="statLabel">Tổng lịch hẹn</div>
+        <div class="statValue"><?= $total ?></div>
+    </div>
+
+    <div class="statCard">
+        <div class="statLabel">Chờ xác nhận</div>
+        <div class="statValue"><?= $cho ?></div>
+    </div>
+
+    <div class="statCard">
+        <div class="statLabel">Đã xác nhận</div>
+        <div class="statValue"><?= $xacnhan ?></div>
+    </div>
+
+    <div class="statCard">
+        <div class="statLabel">Hoàn thành</div>
+        <div class="statValue"><?= $hoanthanh ?></div>
     </div>
 </div>
 
-</body>
-</html>
+<div class="card">
+
+    <div class="cardHead">
+        <h2>Danh sách lịch hẹn Spa</h2>
+    </div>
+
+    <div class="tableWrap">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Khách hàng</th>
+                    <th>SĐT</th>
+                    <th>Thú cưng</th>
+                    <th>Cân nặng</th>
+                    <th>Dịch vụ chính</th>
+                    <th>Dịch vụ thêm</th>
+                    <th>Ngày đặt</th>
+                    <th>Giờ đặt</th>
+                    <th>Ghi chú</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th>Xử lý</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            <?php if ($result && $result->num_rows > 0) { ?>
+
+                <?php $stt = 1; ?>
+
+                <?php while ($row = $result->fetch_assoc()) { ?>
+
+                    <?php
+                    $status_class = "cho";
+
+                    if ($row['trang_thai'] == "Đã xác nhận") {
+                        $status_class = "xacnhan";
+                    } elseif ($row['trang_thai'] == "Đã hoàn thành") {
+                        $status_class = "hoanthanh";
+                    } elseif ($row['trang_thai'] == "Đã hủy") {
+                        $status_class = "huy";
+                    }
+                    ?>
+
+                    <tr>
+
+                        <td><b><?= $stt++ ?></b></td>
+
+                        <td>
+                            <div class="customer">
+                                <?= htmlspecialchars($row['ho_ten']) ?>
+                            </div>
+
+                            <div class="pet">
+                                <?= htmlspecialchars($row['ten_thu_cung']) ?>
+                            </div>
+                        </td>
+
+                        <td><?= htmlspecialchars($row['so_dien_thoai']) ?></td>
+
+                        <td><?= htmlspecialchars($row['ten_thu_cung']) ?></td>
+
+                        <td><?= htmlspecialchars($row['can_nang']) ?></td>
+
+                        <td><?= htmlspecialchars($row['dich_vu_chinh']) ?></td>
+
+                        <td>
+                            <?= !empty($row['dich_vu_them'])
+                                ? htmlspecialchars($row['dich_vu_them'])
+                                : "Không có"; ?>
+                        </td>
+
+                        <td><?= date("d/m/Y", strtotime($row['ngay_dat'])) ?></td>
+
+                        <td><?= date("H:i", strtotime($row['gio_dat'])) ?></td>
+
+                        <td>
+                            <?= !empty($row['ghi_chu'])
+                                ? htmlspecialchars($row['ghi_chu'])
+                                : "Không có"; ?>
+                        </td>
+
+                        <td>
+                            <span class="status <?= $status_class ?>">
+                                <?= htmlspecialchars($row['trang_thai']) ?>
+                            </span>
+                        </td>
+
+                        <td><?= date("d/m/Y H:i", strtotime($row['ngay_tao'])) ?></td>
+
+                        <td>
+
+                            <div class="actionWrap">
+
+                                <a href="xu_ly_lich_hen.php?action=xac_nhan&id=<?= $row['id'] ?>"
+                                   class="btn btn-success">
+                                    Xác nhận
+                                </a>
+
+                                <a href="xu_ly_lich_hen.php?action=hoan_thanh&id=<?= $row['id'] ?>"
+                                   class="btn btn-primary">
+                                    Hoàn thành
+                                </a>
+
+                                <a href="xu_ly_lich_hen.php?action=huy&id=<?= $row['id'] ?>"
+                                   class="btn btn-warning">
+                                    Hủy
+                                </a>
+
+                                <a href="xu_ly_lich_hen.php?action=xoa&id=<?= $row['id'] ?>"
+                                   class="btn btn-danger"
+                                   onclick="return confirm('Bạn có chắc muốn xóa lịch hẹn này không?')">
+                                    Xóa
+                                </a>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                <?php } ?>
+
+            <?php } else { ?>
+
+                <tr>
+                    <td colspan="13" class="empty">
+                        Chưa có lịch hẹn nào.
+                    </td>
+                </tr>
+
+            <?php } ?>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+</div>
+</div>
+
+<?php include __DIR__ . "/_footer.php"; ?>
