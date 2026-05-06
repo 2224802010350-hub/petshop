@@ -84,6 +84,16 @@ $err = $_GET['err'] ?? '';
       font-weight:800;
     }
 
+    .success{
+      background:#dcfce7;
+      color:#166534;
+      padding:13px 15px;
+      border-radius:15px;
+      margin-bottom:16px;
+      border:1px solid #bbf7d0;
+      font-weight:800;
+    }
+
     .grid2{
       display:grid;
       grid-template-columns:1fr 1fr;
@@ -193,7 +203,7 @@ $err = $_GET['err'] ?? '';
 
   <h1>Tạo tài khoản VuiPet</h1>
   <p class="desc">
-    Đăng ký tài khoản để mua sắm, đặt dịch vụ và tích điểm thân thiết cho những lần mua sau.
+    Đăng ký tài khoản để mua sắm và đặt dịch vụ tại VuiPet.
   </p>
 
   <?php if ($err): ?>
@@ -213,6 +223,11 @@ $err = $_GET['err'] ?? '';
       </div>
 
       <div class="field">
+        <label>Mật khẩu</label>
+        <input name="mat_khau" type="password" placeholder="Nhập mật khẩu" required>
+      </div>
+
+      <div class="field">
         <label>Số điện thoại</label>
         <input name="so_dien_thoai" placeholder="098xxxxxxx">
       </div>
@@ -220,11 +235,6 @@ $err = $_GET['err'] ?? '';
       <div class="field">
         <label>Email</label>
         <input name="email" type="email" placeholder="email@gmail.com">
-      </div>
-
-      <div class="field">
-        <label>Mật khẩu</label>
-        <input name="mat_khau" type="password" placeholder="Nhập mật khẩu" required>
       </div>
 
       <div class="field full">

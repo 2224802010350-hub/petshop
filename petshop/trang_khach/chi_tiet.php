@@ -200,9 +200,34 @@ $tonKho = (int)($sp["ton_kho"] ?? 0);
     <?php endif; ?>
 
     <p><?php echo nl2br(htmlspecialchars($moTa)); ?></p>
+    
 
     <div class="detailActions">
-      <a href="gio_hang.php" class="btnPrimary">Thêm vào giỏ</a>
+      
+      <button class="btnPrimary" type="button" onclick="addToCart()">Thêm vào giỏ</button>
+
+<script>
+async function addToCart(){
+  const fd = new FormData();
+  fd.append("action", "add");
+  fd.append("id_san_pham", "<?= (int)$id ?>");
+  fd.append("so_luong", "1");
+
+  const r = await fetch("/petshop/petshop/api/api_gio_hang.php", {
+    method:"POST",
+    body:fd
+  });
+
+  const d = await r.json();
+
+  if (!d.ok){
+    alert(d.msg || "Không thêm được vào giỏ");
+    return;
+  }
+
+  location.href = "/petshop/petshop/trang_khach/gio_hang.php";
+}
+</script>
       <a href="lien_he.php" class="btnOutline">Liên hệ tư vấn</a>
     </div>
   </div>

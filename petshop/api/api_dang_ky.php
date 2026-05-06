@@ -8,6 +8,7 @@ $mat_khau = trim($_POST["mat_khau"] ?? "");
 $ho_ten = trim($_POST["ho_ten"] ?? "");
 $email = trim($_POST["email"] ?? "");
 $so_dien_thoai = trim($_POST["so_dien_thoai"] ?? "");
+$dia_chi = trim($_POST["dia_chi"] ?? "");
 
 if ($ten_dang_nhap === "" || $mat_khau === "" || $ho_ten === "") {
     header("Location: /petshop/petshop/trang_khach/dang_ky.php?err=Vui lòng nhập đầy đủ thông tin");
@@ -29,34 +30,88 @@ if ($old) {
     exit;
 }
 
-$mat_khau_hash = password_hash($mat_khau, PASSWORD_DEFAULT);
-$vai_tro = "khach";
-$trang_thai = 1;
+if ($so_dien_thoai !== "") {
+    $stmt = $conn->prepare("
+        SELECT id 
+        FROM khach_hang 
+        WHERE so_dien_thoai = ?
+        LIMIT 1
+    ");
+    $stmt->bind_param("s", $so_dien_thoai);
+    $stmt->execute();
+    $oldPhone = $stmt->get_result()->fetch_assoc();
 
-$stmt = $conn->prepare("
-    INSERT INTO nguoi_dung(
+    if ($oldPhone) {
+        header("Location: /petshop/petshop/trang_khach/dang_ky.php?err=Số điện thoại đã tồn tại");
+        exit;
+    }
+}
+
+$conn->begin_transaction();
+
+try {
+    $mat_khau_hash = password_hash($mat_khau, PASSWORD_DEFAULT);
+    $vai_tro = "khach";
+    $trang_thai = 1;
+
+    $stmt = $conn->prepare("
+        INSERT INTO nguoi_dung(
+            ho_ten,
+            ten_dang_nhap,
+            mat_khau_hash,
+            vai_tro,
+            trang_thai
+        )
+        VALUES (?, ?, ?, ?, ?)
+    ");
+
+    $stmt->bind_param(
+        "ssssi",
+        $ho_ten,
+        $ten_dang_nhap,
+        $mat_khau_hash,
+        $vai_tro,
+        $trang_thai
+    );
+
+    if (!$stmt->execute()) {
+        throw new Exception("Không đăng ký được tài khoản");
+    }
+
+    $id_nguoi_dung = $conn->insert_id;
+
+    $stmt = $conn->prepare("
+    INSERT INTO khach_hang(
+        id_nguoi_dung,
         ho_ten,
-        ten_dang_nhap,
-        mat_khau_hash,
-        vai_tro,
-        trang_thai
+        so_dien_thoai,
+        email,
+        dia_chi
     )
     VALUES (?, ?, ?, ?, ?)
 ");
 
 $stmt->bind_param(
-    "ssssi",
+    "issss",
+    $id_nguoi_dung,
     $ho_ten,
-    $ten_dang_nhap,
-    $mat_khau_hash,
-    $vai_tro,
-    $trang_thai
+    $so_dien_thoai,
+    $email,
+    $dia_chi
 );
 
-if (!$stmt->execute()) {
-    header("Location: /petshop/petshop/trang_khach/dang_ky.php?err=Không đăng ký được tài khoản");
+    if (!$stmt->execute()) {
+        throw new Exception("Không thêm được khách hàng");
+    }
+
+    $conn->commit();
+
+    header("Location: /petshop/petshop/trang_khach/dang_nhap.php?err=Đăng ký thành công, vui lòng đăng nhập");
+    exit;
+
+} catch (Throwable $e) {
+    $conn->rollback();
+
+    header("Location: /petshop/petshop/trang_khach/dang_ky.php?err=" . urlencode($e->getMessage()));
     exit;
 }
-
-header("Location: /petshop/petshop/trang_khach/dang_nhap.php?err=Đăng ký thành công, vui lòng đăng nhập");
-exit;

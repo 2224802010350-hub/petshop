@@ -132,7 +132,6 @@ function product_img_url($filename) {
 <section class="productWrap">
   <h1 class="productTitle"><?= htmlspecialchars($PAGE_TITLE) ?></h1>
   
-
   <?php if ($rs->num_rows === 0): ?>
     <div class="emptyBox">
       Chưa có sản phẩm trong danh mục này. Vào Admin → Sản phẩm → chọn đúng danh mục rồi lưu.

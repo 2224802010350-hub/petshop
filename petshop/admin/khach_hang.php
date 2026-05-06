@@ -21,13 +21,11 @@ include __DIR__ . "/_header.php";
         <thead>
           <tr>
             <th style="width:60px">ID</th>
-            <th style="width:140px" >Khách hàng</th>
-            <th style="width:120px">SĐT</th>
+            <th style="width:180px">Khách hàng</th>
+            <th style="width:140px">SĐT</th>
             <th>Email</th>
-            <th style="width:30px">Địa chỉ</th>
-            <th style="width:30px">Hạng</th>
-            <th style="width:60px">Điểm</th>
-            <th style="width:100px">Hành động</th>
+            <th>Địa chỉ</th>
+            <th style="width:240px">Hành động</th>
           </tr>
         </thead>
         <tbody id="list"></tbody>
@@ -52,6 +50,7 @@ include __DIR__ . "/_header.php";
             <label class="muted">Họ tên</label>
             <input class="input" name="ho_ten" id="ho_ten" required>
           </div>
+
           <div>
             <label class="muted">Số điện thoại</label>
             <input class="input" name="so_dien_thoai" id="so_dien_thoai" required placeholder="VD: 098xxxxxxx">
@@ -61,22 +60,10 @@ include __DIR__ . "/_header.php";
             <label class="muted">Email</label>
             <input class="input" name="email" id="email" placeholder="(không bắt buộc)">
           </div>
-          <div>
-            <label class="muted">Hạng khách</label>
-            <select class="input" name="hang_khach" id="hang_khach">
-              <option value="thuong">Thường</option>
-              <option value="vip">VIP</option>
-            </select>
-          </div>
 
           <div style="grid-column:1/-1">
             <label class="muted">Địa chỉ</label>
             <input class="input" name="dia_chi" id="dia_chi" placeholder="(không bắt buộc)">
-          </div>
-
-          <div>
-            <label class="muted">Điểm</label>
-            <input class="input" type="number" min="0" name="diem" id="diem" value="0">
           </div>
         </div>
 
@@ -161,8 +148,6 @@ const ho_ten = document.getElementById("ho_ten");
 const so_dien_thoai = document.getElementById("so_dien_thoai");
 const email = document.getElementById("email");
 const dia_chi = document.getElementById("dia_chi");
-const hang_khach = document.getElementById("hang_khach");
-const diem = document.getElementById("diem");
 
 const modalHist = document.getElementById("modalHist");
 const btnCloseHist = document.getElementById("btnCloseHist");
@@ -189,38 +174,49 @@ function openModal(edit=false){
   modalTitle.innerText = edit ? "Sửa khách hàng" : "Thêm khách hàng";
   setTimeout(()=>ho_ten.focus(), 50);
 }
-function closeModal(){ modal.style.display = "none"; }
+
+function closeModal(){
+  modal.style.display = "none";
+}
 
 function resetForm(){
   f.reset();
   id.value="";
-  hang_khach.value="thuong";
-  diem.value="0";
   formMsg.style.display="none";
 }
 
-btnAdd.addEventListener("click", ()=>{ resetForm(); openModal(false); });
+btnAdd.addEventListener("click", ()=>{
+  resetForm();
+  openModal(false);
+});
+
 btnClose.addEventListener("click", closeModal);
-modal.addEventListener("click", (e)=>{ if (e.target===modal) closeModal(); });
+
+modal.addEventListener("click", (e)=>{
+  if (e.target===modal) closeModal();
+});
+
 btnReset.addEventListener("click", resetForm);
 
 async function loadKH(){
   const text = (q.value||"").trim();
   const url = text ? `${API}?action=list&q=${encodeURIComponent(text)}` : `${API}?action=list`;
+
   const r = await fetch(url, { credentials:"same-origin" });
   const d = await r.json();
 
   if (!d.ok){
-    list.innerHTML = `<tr><td colspan="8">Không tải được khách hàng</td></tr>`;
+    list.innerHTML = `<tr><td colspan="6">Không tải được khách hàng</td></tr>`;
     return;
   }
+
   ALL = d.items || [];
   render(ALL);
 }
 
 function render(items){
   if (!items.length){
-    list.innerHTML = `<tr><td colspan="8">Không có dữ liệu</td></tr>`;
+    list.innerHTML = `<tr><td colspan="6">Không có dữ liệu</td></tr>`;
     return;
   }
 
@@ -231,18 +227,6 @@ function render(items){
       <td>${escapeHtml(x.so_dien_thoai||"")}</td>
       <td class="muted">${escapeHtml(x.email||"")}</td>
       <td class="muted">${escapeHtml(x.dia_chi||"")}</td>
-      <td>
-  <td>
-  <span class="badge">
-    ${x.hang_thanh_vien || 'Đồng'}
-  </span>
-</td>
-
-<td>
-  <b style="color:#16a34a">
-    ${x.diem ?? 0}
-  </b>
-</td>
       <td>
         <div class="actions">
           <button class="btn btn--ghost" onclick='editKH(${JSON.stringify(x).replaceAll("'", "\\'")})'>Sửa</button>
@@ -263,21 +247,29 @@ function editKH(x){
   so_dien_thoai.value = x.so_dien_thoai || "";
   email.value = x.email || "";
   dia_chi.value = x.dia_chi || "";
-  hang_khach.value = x.hang_khach || "thuong";
-  diem.value = x.diem ?? 0;
   openModal(true);
 }
 
 async function delKH(khId){
-  if (!confirm("Xóa khách hàng này? (Nếu đã có đơn hàng/lịch hẹn sẽ không xóa được)")) return;
+  if (!confirm("Xóa khách hàng này? Nếu đã có đơn hàng/lịch hẹn sẽ không xóa được.")) return;
+
   const fd = new FormData();
   fd.append("action","delete");
   fd.append("id", khId);
 
-  const r = await fetch(API, { method:"POST", body:fd, credentials:"same-origin" });
+  const r = await fetch(API, {
+    method:"POST",
+    body:fd,
+    credentials:"same-origin"
+  });
+
   const d = await r.json();
 
-  if (!d.ok){ showToast(d.msg || "Xóa thất bại", false); return; }
+  if (!d.ok){
+    showToast(d.msg || "Xóa thất bại", false);
+    return;
+  }
+
   showToast(d.msg || "Đã xóa");
   await loadKH();
 }
@@ -289,13 +281,27 @@ f.addEventListener("submit", async (e)=>{
   const name = ho_ten.value.trim();
   const phone = so_dien_thoai.value.trim();
 
-  if (!name){ formMsg.style.display="block"; formMsg.innerText="Họ tên không được rỗng"; return; }
-  if (!phone){ formMsg.style.display="block"; formMsg.innerText="SĐT không được rỗng"; return; }
+  if (!name){
+    formMsg.style.display="block";
+    formMsg.innerText="Họ tên không được rỗng";
+    return;
+  }
+
+  if (!phone){
+    formMsg.style.display="block";
+    formMsg.innerText="SĐT không được rỗng";
+    return;
+  }
 
   const fd = new FormData(f);
   fd.append("action","save");
 
-  const r = await fetch(API, { method:"POST", body:fd, credentials:"same-origin" });
+  const r = await fetch(API, {
+    method:"POST",
+    body:fd,
+    credentials:"same-origin"
+  });
+
   const d = await r.json();
 
   if (!d.ok){
@@ -318,26 +324,51 @@ function openHist(khId, name, phone){
   loadHistMua(khId);
   loadHistDv(khId);
 }
-function closeHist(){ modalHist.style.display="none"; }
+
+function closeHist(){
+  modalHist.style.display="none";
+}
+
 btnCloseHist.addEventListener("click", closeHist);
-modalHist.addEventListener("click", (e)=>{ if (e.target===modalHist) closeHist(); });
+
+modalHist.addEventListener("click", (e)=>{
+  if (e.target===modalHist) closeHist();
+});
 
 tabMua.addEventListener("click", ()=>{
-  tabMua.classList.add("active"); tabDv.classList.remove("active");
-  paneMua.style.display="block"; paneDv.style.display="none";
+  tabMua.classList.add("active");
+  tabDv.classList.remove("active");
+  paneMua.style.display="block";
+  paneDv.style.display="none";
 });
+
 tabDv.addEventListener("click", ()=>{
-  tabDv.classList.add("active"); tabMua.classList.remove("active");
-  paneDv.style.display="block"; paneMua.style.display="none";
+  tabDv.classList.add("active");
+  tabMua.classList.remove("active");
+  paneDv.style.display="block";
+  paneMua.style.display="none";
 });
 
 async function loadHistMua(khId){
   lsMua.innerHTML = `<tr><td colspan="4">Đang tải...</td></tr>`;
-  const r = await fetch(`${API}?action=lich_su_mua&id=${khId}`, { credentials:"same-origin" });
+
+  const r = await fetch(`${API}?action=lich_su_mua&id=${khId}`, {
+    credentials:"same-origin"
+  });
+
   const d = await r.json();
-  if (!d.ok){ lsMua.innerHTML = `<tr><td colspan="4">Không tải được</td></tr>`; return; }
+
+  if (!d.ok){
+    lsMua.innerHTML = `<tr><td colspan="4">Không tải được</td></tr>`;
+    return;
+  }
+
   const items = d.items || [];
-  if (!items.length){ lsMua.innerHTML = `<tr><td colspan="4">Chưa có đơn hàng</td></tr>`; return; }
+
+  if (!items.length){
+    lsMua.innerHTML = `<tr><td colspan="4">Chưa có đơn hàng</td></tr>`;
+    return;
+  }
 
   lsMua.innerHTML = items.map(x=>`
     <tr>
@@ -351,11 +382,24 @@ async function loadHistMua(khId){
 
 async function loadHistDv(khId){
   lsDv.innerHTML = `<tr><td colspan="4">Đang tải...</td></tr>`;
-  const r = await fetch(`${API}?action=lich_su_dich_vu&id=${khId}`, { credentials:"same-origin" });
+
+  const r = await fetch(`${API}?action=lich_su_dich_vu&id=${khId}`, {
+    credentials:"same-origin"
+  });
+
   const d = await r.json();
-  if (!d.ok){ lsDv.innerHTML = `<tr><td colspan="4">Không tải được</td></tr>`; return; }
+
+  if (!d.ok){
+    lsDv.innerHTML = `<tr><td colspan="4">Không tải được</td></tr>`;
+    return;
+  }
+
   const items = d.items || [];
-  if (!items.length){ lsDv.innerHTML = `<tr><td colspan="4">Chưa có lịch hẹn</td></tr>`; return; }
+
+  if (!items.length){
+    lsDv.innerHTML = `<tr><td colspan="4">Chưa có lịch hẹn</td></tr>`;
+    return;
+  }
 
   lsDv.innerHTML = items.map(x=>`
     <tr>
@@ -367,15 +411,27 @@ async function loadHistDv(khId){
   `).join("");
 }
 
-// utils
 function fmtMoney(n){
-  try { return new Intl.NumberFormat('vi-VN').format(Number(n)) + " ₫"; }
-  catch(e){ return n + " ₫"; }
+  try {
+    return new Intl.NumberFormat('vi-VN').format(Number(n)) + " ₫";
+  } catch(e){
+    return n + " ₫";
+  }
 }
+
 function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  return String(s).replace(/[&<>"']/g, m => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#039;'
+  }[m]));
 }
-function escapeJs(s){ return String(s).replaceAll("\\","\\\\").replaceAll('"','\\"'); }
+
+function escapeJs(s){
+  return String(s).replaceAll("\\","\\\\").replaceAll('"','\\"');
+}
 
 document.addEventListener("DOMContentLoaded", loadKH);
 </script>

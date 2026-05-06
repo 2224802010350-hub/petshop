@@ -23,35 +23,30 @@ try {
 
     $sql = "
       SELECT 
-        kh.id,
-        kh.ho_ten,
-        kh.so_dien_thoai,
-        kh.email,
-        kh.dia_chi,
-        kh.hang_khach,
-        kh.ngay_tao,
-
-        COALESCE(khtt.diem, 0) AS diem,
-        COALESCE(khtt.hang_thanh_vien, 'Đồng') AS hang_thanh_vien
-
-      FROM khach_hang kh
-      LEFT JOIN khach_hang_than_thiet khtt 
-        ON khtt.khach_hang_id = kh.id
+        id,
+        ho_ten,
+        so_dien_thoai,
+        email,
+        dia_chi,
+        ngay_tao
+      FROM khach_hang
     ";
 
     if ($q !== "") {
       $sql .= "
-        WHERE kh.ho_ten LIKE ?
-           OR kh.so_dien_thoai LIKE ?
-           OR kh.email LIKE ?
+        WHERE ho_ten LIKE ?
+           OR so_dien_thoai LIKE ?
+           OR email LIKE ?
       ";
     }
 
-    $sql .= " ORDER BY kh.id DESC";
+    $sql .= " ORDER BY id DESC";
 
     if ($q !== "") {
       $like = "%" . $q . "%";
       $stmt = $conn->prepare($sql);
+      if (!$stmt) out(false, ["msg" => "SQL lỗi: " . $conn->error]);
+
       $stmt->bind_param("sss", $like, $like, $like);
       $stmt->execute();
       $rs = $stmt->get_result();
@@ -77,7 +72,6 @@ try {
     $so_dien_thoai = trim($_POST["so_dien_thoai"] ?? "");
     $email = trim($_POST["email"] ?? "");
     $dia_chi = trim($_POST["dia_chi"] ?? "");
-    $hang_khach = trim($_POST["hang_khach"] ?? "thuong");
 
     if ($ho_ten === "" || $so_dien_thoai === "") {
       out(false, ["msg" => "Vui lòng nhập họ tên và số điện thoại"]);
@@ -89,6 +83,8 @@ try {
       WHERE so_dien_thoai = ? AND id <> ?
       LIMIT 1
     ");
+    if (!$stmt) out(false, ["msg" => "SQL lỗi: " . $conn->error]);
+
     $stmt->bind_param("si", $so_dien_thoai, $id);
     $stmt->execute();
     $old = $stmt->get_result()->fetch_assoc();
@@ -100,10 +96,12 @@ try {
     if ($id > 0) {
       $stmt = $conn->prepare("
         UPDATE khach_hang
-        SET ho_ten = ?, so_dien_thoai = ?, email = ?, dia_chi = ?, hang_khach = ?
+        SET ho_ten = ?, so_dien_thoai = ?, email = ?, dia_chi = ?
         WHERE id = ?
       ");
-      $stmt->bind_param("sssssi", $ho_ten, $so_dien_thoai, $email, $dia_chi, $hang_khach, $id);
+      if (!$stmt) out(false, ["msg" => "SQL lỗi: " . $conn->error]);
+
+      $stmt->bind_param("ssssi", $ho_ten, $so_dien_thoai, $email, $dia_chi, $id);
 
       if (!$stmt->execute()) {
         out(false, ["msg" => "Không sửa được khách hàng: " . $stmt->error]);
@@ -112,10 +110,12 @@ try {
       out(true, ["msg" => "Đã cập nhật khách hàng"]);
     } else {
       $stmt = $conn->prepare("
-        INSERT INTO khach_hang(ho_ten, so_dien_thoai, email, dia_chi, hang_khach)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO khach_hang(ho_ten, so_dien_thoai, email, dia_chi)
+        VALUES (?, ?, ?, ?)
       ");
-      $stmt->bind_param("sssss", $ho_ten, $so_dien_thoai, $email, $dia_chi, $hang_khach);
+      if (!$stmt) out(false, ["msg" => "SQL lỗi: " . $conn->error]);
+
+      $stmt->bind_param("ssss", $ho_ten, $so_dien_thoai, $email, $dia_chi);
 
       if (!$stmt->execute()) {
         out(false, ["msg" => "Không thêm được khách hàng: " . $stmt->error]);
@@ -133,6 +133,8 @@ try {
     }
 
     $stmt = $conn->prepare("DELETE FROM khach_hang WHERE id = ?");
+    if (!$stmt) out(false, ["msg" => "SQL lỗi: " . $conn->error]);
+
     $stmt->bind_param("i", $id);
 
     if (!$stmt->execute()) {
@@ -151,6 +153,9 @@ try {
       WHERE id_khach_hang = ?
       ORDER BY id DESC
     ");
+
+    if (!$stmt) out(false, ["msg" => "SQL lỗi: " . $conn->error]);
+
     $stmt->bind_param("i", $id);
     $stmt->execute();
 
@@ -174,6 +179,9 @@ try {
       WHERE lh.khach_hang_id = ?
       ORDER BY lh.id DESC
     ");
+
+    if (!$stmt) out(false, ["msg" => "SQL lỗi: " . $conn->error]);
+
     $stmt->bind_param("i", $id);
     $stmt->execute();
 
